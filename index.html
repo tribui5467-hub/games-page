@@ -2,281 +2,149 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Midnight Pro Chess</title>
+    <title>ULTRA DARK CHESS</title>
     <script src="https://cloudflare.com"></script>
     <style>
-        :root {
-            --bg: #050505;
-            --panel: #121212;
-            --sq-light: #313131;
-            --sq-dark: #1a1a1a;
-            --gold: #ffcc00;
-            --white-piece: #ffffff;
-            --black-piece: #ff4747;
-        }
+        body { background: #000; color: #fff; font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        #wrapper { display: flex; background: #111; padding: 20px; border: 2px solid #333; border-radius: 10px; gap: 20px; box-shadow: 0 0 30px rgba(0,0,0,1); }
+        
+        /* High Contrast Board */
+        table { border-collapse: collapse; border: 4px solid #444; }
+        td { width: 65px; height: 65px; text-align: center; vertical-align: middle; padding: 0; position: relative; cursor: pointer; }
+        
+        /* Distinct Square Colors */
+        .sq-l { background: #3d3d3d; } /* Lighter Grey */
+        .sq-d { background: #1a1a1a; } /* Darker Grey */
+        
+        /* Piece Styling */
+        .piece { font-size: 45px; user-select: none; transition: transform 0.2s; }
+        .w { color: #ffffff; text-shadow: 0 0 10px rgba(255,255,255,0.5); }
+        .b { color: #ff3e3e; text-shadow: 0 0 10px rgba(255,62,62,0.5); }
 
-        body {
-            background-color: var(--bg);
-            color: #fff;
-            font-family: 'Segoe UI', sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-        }
+        /* Chess.com Eval Icons */
+        .eval { position: absolute; top: -5px; right: -5px; width: 22px; height: 22px; border-radius: 50%; font-size: 12px; font-weight: bold; display: flex; align-items: center; justify-content: center; z-index: 100; animation: pop 0.3s ease; }
+        .best { background: #96bc4b; color: #fff; }
+        .brilliant { background: #1bbbbe; color: #fff; }
+        @keyframes pop { from { transform: scale(0); } to { transform: scale(1); } }
 
-        #main-wrapper {
-            display: flex;
-            gap: 20px;
-            background: var(--panel);
-            padding: 30px;
-            border-radius: 12px;
-            border: 1px solid #333;
-            box-shadow: 0 0 50px rgba(0,0,0,0.9);
-        }
-
-        #board {
-            display: grid;
-            grid-template-columns: repeat(8, 70px);
-            grid-template-rows: repeat(8, 70px);
-            border: 5px solid #000;
-            position: relative;
-        }
-
-        .square {
-            width: 70px;
-            height: 70px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            position: relative;
-        }
-
-        .light { background: var(--sq-light); }
-        .dark { background: var(--sq-dark); }
-
-        /* Piece Styling & Gliding */
-        .piece {
-            font-size: 50px;
-            cursor: pointer;
-            z-index: 10;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            user-select: none;
-            filter: drop-shadow(0 0 5px rgba(0,0,0,0.8));
-        }
-
-        .w-piece { color: var(--white-piece); text-shadow: 0 0 15px rgba(255,255,255,0.3); }
-        .b-piece { color: var(--black-piece); text-shadow: 0 0 15px rgba(255,71,71,0.3); }
-
-        /* Chess.com Style Evaluation Icons */
-        .eval-icon {
-            position: absolute;
-            top: -10px;
-            right: -10px;
-            width: 24px;
-            height: 24px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-            font-size: 12px;
-            z-index: 100;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
-            animation: smoothExpand 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
-
-        @keyframes smoothExpand {
-            0% { transform: scale(0) rotate(-45deg); opacity: 0; }
-            100% { transform: scale(1) rotate(0); opacity: 1; }
-        }
-
-        .icon-best { background: #96bc4b; color: white; }
-        .icon-great { background: #5c8bb0; color: white; }
-        .icon-blunder { background: #fa412d; color: white; }
-
-        .sidebar {
-            width: 200px;
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-
-        .status-box {
-            background: #1a1a1a;
-            padding: 15px;
-            border-radius: 8px;
-            border: 1px solid #333;
-            text-align: center;
-        }
-
-        button {
-            background: var(--gold);
-            color: black;
-            border: none;
-            padding: 12px;
-            border-radius: 6px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: 0.2s;
-        }
-
-        button:hover { transform: translateY(-2px); filter: brightness(1.2); }
-
-        .selected { background: rgba(255, 204, 0, 0.4) !important; }
-        .last-move { background: rgba(150, 188, 75, 0.3) !important; }
+        .side { width: 180px; display: flex; flex-direction: column; gap: 15px; }
+        button { background: #96bc4b; border: none; padding: 10px; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        .selected { outline: 3px solid #ffcc00; outline-offset: -3px; }
     </style>
 </head>
 <body>
 
-<div id="main-wrapper">
-    <div id="board"></div>
-    <div class="sidebar">
-        <h2 style="margin:0; color: var(--gold);">Grandmaster Dark</h2>
-        <div class="status-box">
-            <div id="turn-display">White to move</div>
-        </div>
-        <select id="level" style="padding:10px; background:#222; color:#fff; border-radius:5px;">
-            <option value="1">Tier 1: Basic</option>
-            <option value="2">Tier 2: Tactical</option>
-            <option value="3" selected>Tier 3: Strategic (Sacrifice)</option>
+<div id="wrapper">
+    <table id="chess-board"></table>
+    <div class="side">
+        <h2 style="color:#96bc4b; margin:0">VOX CHESS</h2>
+        <div id="status">White to Move</div>
+        <select id="diff" style="padding:5px; background:#222; color:#fff">
+            <option value="2">Tier 2: Intermediate</option>
+            <option value="3" selected>Tier 3: Strategic</option>
         </select>
-        <button onclick="resetGame()">New Match</button>
-        <div id="history" style="font-size:12px; opacity:0.6; height:100px; overflow-y:auto;">Moves will appear here...</div>
+        <button onclick="reset()">New Game</button>
     </div>
 </div>
 
 <script>
     const game = new Chess();
-    const boardEl = document.getElementById('board');
     const glyphs = {p:'♟', r:'♜', n:'♞', b:'♝', q:'♛', k:'♚'};
+    let fromSq = null;
 
-    let selected = null;
+    function render() {
+        const board = game.board();
+        const table = document.getElementById('chess-board');
+        table.innerHTML = '';
 
-    function createBoard() {
-        boardEl.innerHTML = '';
-        for (let i = 0; i < 64; i++) {
-            const r = Math.floor(i / 8), c = i % 8;
-            const pos = String.fromCharCode(97 + c) + (8 - r);
-            const sq = document.createElement('div');
-            sq.className = `square ${(r + c) % 2 === 0 ? 'light' : 'dark'}`;
-            sq.dataset.pos = pos;
-            sq.onclick = () => handleClick(pos);
-            boardEl.appendChild(sq);
-        }
-        updateBoard();
-    }
+        for (let r = 0; r < 8; r++) {
+            const tr = document.createElement('tr');
+            for (let c = 0; c < 8; c++) {
+                const td = document.createElement('td');
+                const pos = String.fromCharCode(97 + c) + (8 - r);
+                td.className = (r + c) % 2 === 0 ? 'sq-l' : 'sq-d';
+                td.id = pos;
+                td.onclick = () => move(pos);
 
-    function updateBoard() {
-        document.querySelectorAll('.square').forEach(sq => {
-            const p = game.get(sq.dataset.pos);
-            sq.innerHTML = '';
-            if (p) {
-                const el = document.createElement('div');
-                el.className = `piece ${p.color === 'w' ? 'w-piece' : 'b-piece'}`;
-                el.innerText = glyphs[p.type];
-                sq.appendChild(el);
+                const p = board[r][c];
+                if (p) {
+                    const div = document.createElement('div');
+                    div.className = `piece ${p.color}`;
+                    div.innerText = glyphs[p.type];
+                    td.appendChild(div);
+                }
+                tr.appendChild(td);
             }
-        });
-        document.getElementById('turn-display').innerText = game.turn() === 'w' ? "Your Turn" : "AI Thinking...";
+            table.appendChild(tr);
+        }
+        document.getElementById('status').innerText = game.turn() === 'w' ? "Your Move" : "AI Thinking...";
     }
 
-    function handleClick(pos) {
+    function move(pos) {
         if (game.turn() !== 'w') return;
 
-        if (selected === pos) {
-            selected = null;
-            clearHighlights();
+        if (fromSq === pos) {
+            fromSq = null;
+            render();
             return;
         }
 
-        const move = game.move({ from: selected, to: pos, promotion: 'q' });
-
-        if (move) {
-            selected = null;
-            clearHighlights();
-            highlight(move.from, move.to);
-            applyEval(pos, move);
-            updateBoard();
-            setTimeout(aiMove, 600);
+        const attempt = game.move({ from: fromSq, to: pos, promotion: 'q' });
+        if (attempt) {
+            fromSq = null;
+            showIcon(pos, attempt);
+            render();
+            setTimeout(aiMove, 500);
         } else {
             const p = game.get(pos);
             if (p && p.color === 'w') {
-                selected = pos;
-                clearHighlights();
-                document.querySelector(`[data-pos='${pos}']`).classList.add('selected');
+                fromSq = pos;
+                render();
+                document.getElementById(pos).classList.add('selected');
             }
         }
     }
 
     function aiMove() {
-        if (game.game_over()) return;
-        
-        const depth = parseInt(document.getElementById('level').value);
         const moves = game.moves();
-        
-        // Simple Minimax for "Smarter" AI
-        let bestMove = moves[Math.floor(Math.random() * moves.length)];
-        let bestScore = -Infinity;
+        if (moves.length === 0) return;
 
+        // Strategic Logic (Tier 3)
+        let best = moves[0];
+        let maxScore = -9999;
+        
         moves.forEach(m => {
             game.move(m);
-            let score = -evaluateBoard(game);
+            let score = -evaluate();
             game.undo();
-            if (score > bestScore) {
-                bestScore = score;
-                bestMove = m;
-            }
+            if (score > maxScore) { maxScore = score; best = m; }
         });
 
-        const mObj = game.move(bestMove);
-        highlight(mObj.from, mObj.to);
-        applyEval(mObj.to, mObj);
-        updateBoard();
+        const mObj = game.move(best);
+        showIcon(mObj.to, mObj);
+        render();
     }
 
-    function evaluateBoard(g) {
-        const vals = {p:10, n:30, b:30, r:50, q:90, k:900};
+    function evaluate() {
+        const scores = {p:10, n:30, b:30, r:50, q:90, k:900};
         let total = 0;
-        g.board().forEach(row => {
-            row.forEach(p => {
-                if (p) total += (p.color === 'b' ? vals[p.type] : -vals[p.type]);
-            });
+        game.board().forEach(row => {
+            row.forEach(p => { if(p) total += (p.color === 'w' ? -scores[p.type] : scores[p.type]); });
         });
         return total;
     }
 
-    function applyEval(pos, move) {
-        const sq = document.querySelector(`[data-pos='${pos}']`);
+    function showIcon(pos, m) {
+        const td = document.getElementById(pos);
         const icon = document.createElement('div');
-        icon.className = 'eval-icon';
-        
-        if (move.captured) {
-            icon.classList.add('icon-best');
-            icon.innerText = '!!';
-        } else {
-            icon.classList.add('icon-great');
-            icon.innerText = '★';
-        }
-        
-        sq.appendChild(icon);
-        setTimeout(() => icon.remove(), 1500);
+        icon.className = 'eval ' + (m.captured ? 'brilliant' : 'best');
+        icon.innerText = m.captured ? '!!' : '★';
+        td.appendChild(icon);
+        setTimeout(() => icon.remove(), 1200);
     }
 
-    function highlight(from, to) {
-        clearHighlights();
-        document.querySelector(`[data-pos='${from}']`).classList.add('last-move');
-        document.querySelector(`[data-pos='${to}']`).classList.add('last-move');
-    }
-
-    function clearHighlights() {
-        document.querySelectorAll('.square').forEach(s => s.classList.remove('selected', 'last-move'));
-    }
-
-    function resetGame() { game.reset(); createBoard(); }
-
-    createBoard();
+    function reset() { game.reset(); render(); }
+    render();
 </script>
 </body>
 </html>
