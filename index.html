@@ -1,252 +1,203 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en-AU">
 <head>
     <meta charset="UTF-8">
-    <title>ULTRA DARK CHESS PRO</title>
+    <title>Equinox Games</title>
     <style>
-        :root {
-            --bg: #050505;
-            --panel: #111111;
-            --sq-l: #3a3a3a;
-            --sq-d: #1a1a1a;
-            --white: #ffffff;
-            --black: #ff3e3e;
-            --gold: #d4af37;
-        }
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body, html { height: 100vh; width: 100vw; background: #000; overflow: hidden; }
 
-        body {
-            background: var(--bg);
-            color: #eee;
-            font-family: 'Segoe UI', sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-            overflow: hidden;
-        }
-
-        #game-layout {
-            display: flex;
-            gap: 30px;
-            background: var(--panel);
-            padding: 30px;
-            border-radius: 15px;
-            border: 1px solid #333;
-            box-shadow: 0 0 60px rgba(0,0,0,1);
-        }
-
-        #board {
-            display: grid;
-            grid-template-columns: repeat(8, 70px);
-            grid-template-rows: repeat(8, 70px);
-            border: 6px solid #000;
-            position: relative;
-        }
-
-        .square {
-            width: 70px;
-            height: 70px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            position: relative;
-        }
-
-        .sq-l { background: var(--sq-l); }
-        .sq-d { background: var(--sq-d); }
-
-        .piece {
-            font-size: 50px;
-            cursor: pointer;
-            z-index: 10;
-            user-select: none;
-            transition: transform 0.4s cubic-bezier(0.2, 1, 0.3, 1);
-            filter: drop-shadow(0 4px 4px rgba(0,0,0,0.5));
-        }
-
-        .p-w { color: var(--white); text-shadow: 0 0 10px rgba(255,255,255,0.4); }
-        .p-b { color: var(--black); text-shadow: 0 0 10px rgba(255,62,62,0.4); }
-
-        /* Evaluation Icons (Chess.com Style) */
-        .eval-pop {
+        #chess-cloak, #games-embed {
             position: absolute;
-            top: -8px;
-            right: -8px;
-            width: 24px;
-            height: 24px;
-            border-radius: 50%;
-            display: flex;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            border: none;
+        }
+        #games-embed { display: none; z-index: 20; }
+
+        #auth-overlay {
+            position: fixed;
+            bottom: -100%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 440px;
+            background: rgba(8, 8, 28, 0.98);
+            border: 3px solid #00ffcc;
+            border-radius: 24px;
+            box-shadow: 0 0 50px #00ffcc, 0 0 100px rgba(0, 255, 204, 0.6);
+            padding: 35px 30px;
+            text-align: center;
+            z-index: 99999;
+            transition: all 0.7s cubic-bezier(0.23, 1, 0.32, 1);
+            display: none;
+        }
+        #auth-overlay.show { bottom: 90px; display: block; }
+
+        .neon-title {
+            color: #00ffcc;
+            text-shadow: 0 0 20px #00ffcc;
+            font-size: 1.6rem;
+            font-weight: bold;
+            letter-spacing: 3px;
+            margin-bottom: 22px;
+        }
+        #password-input {
+            width: 100%;
+            padding: 18px;
+            font-size: 1.25rem;
+            background: #0a0a1f;
+            border: 2px solid #00ffcc;
+            border-radius: 12px;
+            color: white;
+            outline: none;
+        }
+        #password-input.error {
+            border-color: #ff3366;
+            box-shadow: 0 0 25px #ff3366;
+        }
+        #status { margin-top: 18px; min-height: 30px; font-size: 1.1rem; }
+
+        #blocked-screen {
+            position: fixed;
+            inset: 0;
+            background: #110000;
+            display: none;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
-            font-weight: bold;
-            font-size: 13px;
-            z-index: 100;
-            animation: slideUp 0.5s ease-out;
+            z-index: 100000;
+            color: #ff3366;
         }
-
-        @keyframes slideUp {
-            0% { transform: translateY(10px) scale(0); opacity: 0; }
-            100% { transform: translateY(0) scale(1); opacity: 1; }
-        }
-
-        .best { background: #96bc4b; color: white; }
-        .great { background: #1bbbbe; color: white; }
-
-        .sidebar {
-            width: 200px;
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }
-
-        .status {
-            padding: 15px;
-            background: #1a1a1a;
-            border-radius: 8px;
-            text-align: center;
-            border-left: 4px solid var(--gold);
-        }
-
-        button {
-            background: var(--gold);
-            color: black;
-            border: none;
-            padding: 12px;
-            border-radius: 6px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: 0.2s;
-        }
-
-        button:hover { filter: brightness(1.2); transform: scale(1.02); }
-
-        .active-sq { background: rgba(212, 175, 55, 0.4) !important; }
+        .blocked-title { font-size: 4.2rem; text-shadow: 0 0 40px #ff3366; margin-bottom: 20px; }
     </style>
 </head>
 <body>
 
-<div id="game-layout">
-    <div id="board"></div>
-    <div class="sidebar">
-        <h2 style="color: var(--gold); margin:0;">VOX PRO</h2>
-        <div class="status" id="turn">White's Move</div>
-        <select id="ai-tier" style="padding:10px; background:#222; color:#fff; border:1px solid #444;">
-            <option value="1">Tier 1: Novice</option>
-            <option value="2">Tier 2: Tactical</option>
-            <option value="3" selected>Tier 3: Strategic (Sacrifice)</option>
-        </select>
-        <button onclick="reset()">New Game</button>
-        <div id="history" style="font-size:12px; opacity:0.5; height:150px; overflow-y:auto;">Engine: Active</div>
+    <!-- Chess Cloak -->
+    <iframe id="chess-cloak" src="https://tribui5467-hub.github.io/Chess_Practice-Elo/" allowfullscreen></iframe>
+
+    <!-- Games Page -->
+    <iframe id="games-embed" src="https://tribui5467-hub.github.io/Chess.Practice-Elo/" allowfullscreen></iframe>
+
+    <!-- Auth Overlay -->
+    <div id="auth-overlay">
+        <div class="neon-title">STATE AUTHENTICATION KEY</div>
+        <input type="password" id="password-input" placeholder="Enter key..." autocomplete="off">
+        <div id="status"></div>
     </div>
-</div>
+
+    <!-- Blocked Screen -->
+    <div id="blocked-screen">
+        <div class="blocked-title">ACCESS BLOCKED</div>
+        <p style="font-size:1.6rem; margin:20px 0;">You have been permanently restricted.</p>
+        <p style="color:#ff6688;">Refreshing will not bypass this.</p>
+    </div>
 
 <script>
-    // Self-contained Chess State
-    let board = [];
-    let turn = 'w';
-    let selected = null;
-    const pieces = {
-        'r': '♜', 'n': '♞', 'b': '♝', 'q': '♛', 'k': '♚', 'p': '♟',
-        'R': '♜', 'N': '♞', 'B': '♝', 'Q': '♛', 'K': '♚', 'P': '♟'
+    let keySequence = [];
+    let lastKeyTime = 0;
+    const SEQUENCE_TIMEOUT = 2000;
+    let attempts = 3;
+    let isBlocked = false;
+    let dailyPasswords = null;
+
+    async function loadPasswords() {
+        try {
+            const response = await fetch('https://cdn.jsdelivr.net/gh/tribui5467-hub/Equinox-Assets_-Chess.Practice-Elo-/main/passwords.json');
+            dailyPasswords = await response.json();
+        } catch (e) {
+            console.error("Failed to load passwords");
+            dailyPasswords = {}; // fallback
+        }
+    }
+
+    function getDailyPassword() {
+        if (!dailyPasswords) return "";
+        const days = ['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
+        const today = days[new Date().getDay()];
+        return dailyPasswords[today] || "";
+    }
+
+    function checkBlocked() {
+        if (localStorage.getItem('equinoxBlocked') === 'true') {
+            isBlocked = true;
+            document.getElementById('blocked-screen').style.display = 'flex';
+            document.getElementById('chess-cloak').style.display = 'none';
+        }
+    }
+
+    function showAuthBox() {
+        const overlay = document.getElementById('auth-overlay');
+        overlay.style.display = 'block';
+        setTimeout(() => overlay.classList.add('show'), 10);
+        document.getElementById('password-input').focus();
+    }
+
+    function handleFailedAttempt() {
+        attempts--;
+        const input = document.getElementById('password-input');
+        const status = document.getElementById('status');
+        input.classList.add('error');
+
+        if (attempts > 0) {
+            status.innerHTML = `<span style="color:#ff3366;">Incorrect. ${attempts} attempt${attempts > 1 ? 's' : ''} remaining.</span>`;
+        } else {
+            status.innerHTML = `<span style="color:#ff3366;">All attempts exhausted.</span>`;
+            setTimeout(() => {
+                isBlocked = true;
+                localStorage.setItem('equinoxBlocked', 'true');
+                document.getElementById('blocked-screen').style.display = 'flex';
+                document.getElementById('auth-overlay').style.display = 'none';
+            }, 1400);
+        }
+        setTimeout(() => input.classList.remove('error'), 800);
+    }
+
+    function checkPassword() {
+        const entered = document.getElementById('password-input').value.trim();
+        if (entered === getDailyPassword()) {
+            const overlay = document.getElementById('auth-overlay');
+            overlay.style.bottom = '-100%';
+            setTimeout(() => {
+                overlay.style.display = 'none';
+                document.getElementById('chess-cloak').style.display = 'none';
+                document.getElementById('games-embed').style.display = 'block';
+            }, 600);
+        } else {
+            handleFailedAttempt();
+        }
+    }
+
+    // Secret code: 4 3 6 7 (fast, no Shift)
+    document.addEventListener('keydown', (e) => {
+        if (isBlocked) return;
+        const now = Date.now();
+        if (now - lastKeyTime > SEQUENCE_TIMEOUT) keySequence = [];
+        lastKeyTime = now;
+
+        keySequence.push(e.key);
+        if (keySequence.length > 4) keySequence.shift();
+
+        if (keySequence.length === 4 &&
+            keySequence[0] === '4' &&
+            keySequence[1] === '3' &&
+            keySequence[2] === '6' &&
+            keySequence[3] === '7') {
+            
+            showAuthBox();
+            keySequence = [];
+        }
+    });
+
+    document.getElementById('password-input').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') checkPassword();
+    });
+
+    // Init
+    window.onload = async () => {
+        checkBlocked();
+        await loadPasswords();
     };
-
-    function init() {
-        board = [
-            ['r','n','b','q','k','b','n','r'],
-            ['p','p','p','p','p','p','p','p'],
-            [0,0,0,0,0,0,0,0], [0,0,0,0,0,0,0,0],
-            [0,0,0,0,0,0,0,0], [0,0,0,0,0,0,0,0],
-            ['P','P','P','P','P','P','P','P'],
-            ['R','N','B','Q','K','B','N','R']
-        ];
-        draw();
-    }
-
-    function draw() {
-        const b = document.getElementById('board');
-        b.innerHTML = '';
-        for(let r=0; r<8; r++) {
-            for(let c=0; c<8; c++) {
-                const sq = document.createElement('div');
-                sq.className = `square ${(r+c)%2===0 ? 'sq-l' : 'sq-d'}`;
-                sq.onclick = () => click(r, c);
-                if(selected && selected.r === r && selected.c === c) sq.classList.add('active-sq');
-                
-                const p = board[r][c];
-                if(p) {
-                    const div = document.createElement('div');
-                    div.className = `piece ${p === p.toUpperCase() ? 'p-w' : 'p-b'}`;
-                    div.innerText = pieces[p];
-                    sq.appendChild(div);
-                }
-                b.appendChild(sq);
-            }
-        }
-        document.getElementById('turn').innerText = turn === 'w' ? "Your Turn" : "AI Thinking...";
-    }
-
-    function click(r, c) {
-        if(turn !== 'w') return;
-        const p = board[r][c];
-        
-        if(selected) {
-            if(p && p === p.toUpperCase()) {
-                selected = {r, c};
-            } else {
-                move(selected.r, selected.c, r, c);
-                selected = null;
-            }
-        } else if(p && p === p.toUpperCase()) {
-            selected = {r, c};
-        }
-        draw();
-    }
-
-    function move(r1, c1, r2, c2) {
-        const p = board[r1][c1];
-        const target = board[r2][c2];
-        board[r2][c2] = p;
-        board[r1][c1] = 0;
-        
-        showEval(r2, c2, target);
-        turn = 'b';
-        setTimeout(ai, 600);
-    }
-
-    function ai() {
-        // Simple Minimax Logic for Tier 3
-        let moves = [];
-        for(let r=0; r<8; r++) {
-            for(let c=0; c<8; c++) {
-                if(board[r][c] && board[r][c] === board[r][c].toLowerCase()) {
-                    // Collect all semi-random valid moves for AI
-                    if(r+1 < 8) moves.push({r1:r, c1:c, r2:r+1, c2:c});
-                }
-            }
-        }
-        
-        const best = moves[Math.floor(Math.random() * moves.length)];
-        const target = board[best.r2][best.c2];
-        board[best.r2][best.c2] = board[best.r1][best.c1];
-        board[best.r1][best.c1] = 0;
-        
-        showEval(best.r2, best.c2, target);
-        turn = 'w';
-        draw();
-    }
-
-    function showEval(r, c, isCapture) {
-        const sq = document.getElementById('board').children[r*8 + c];
-        const icon = document.createElement('div');
-        icon.className = `eval-pop ${isCapture ? 'great' : 'best'}`;
-        icon.innerText = isCapture ? '!!' : '★';
-        sq.appendChild(icon);
-        setTimeout(() => icon.remove(), 1500);
-    }
-
-    function reset() { turn = 'w'; init(); }
-    init();
 </script>
 </body>
 </html>
