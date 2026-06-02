@@ -101,13 +101,13 @@
     let isBlocked = false;
     let dailyPasswords = null;
 
+    // Load passwords from your repo
     async function loadPasswords() {
         try {
             const response = await fetch('https://cdn.jsdelivr.net/gh/tribui5467-hub/Equinox-Assets_-Chess.Practice-Elo-/main/passwords.json');
             dailyPasswords = await response.json();
         } catch (e) {
             console.error("Failed to load passwords");
-            dailyPasswords = {}; // fallback
         }
     }
 
@@ -168,7 +168,7 @@
         }
     }
 
-    // Secret code: 4 3 6 7 (fast, no Shift)
+    // Secret code: 4367 (no Shift)
     document.addEventListener('keydown', (e) => {
         if (isBlocked) return;
         const now = Date.now();
@@ -193,7 +193,41 @@
         if (e.key === 'Enter') checkPassword();
     });
 
-    // Init
+    // ===================== ANTI-INSPECT (Ctrl+U blocked) =====================
+    document.addEventListener('keydown', function(e) {
+        if (e.ctrlKey && (e.key === 'u' || e.key === 'U' || e.key === 'i' || e.key === 'I' || e.key === 's' || e.key === 'S')) {
+            e.preventDefault();
+            return false;
+        }
+        if (e.key === 'F12') {
+            e.preventDefault();
+            return false;
+        }
+        if (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'C' || e.key === 'J')) {
+            e.preventDefault();
+            return false;
+        }
+    });
+
+    // Block right click
+    document.addEventListener('contextmenu', function(e) {
+        e.preventDefault();
+        return false;
+    });
+
+    // Special bypass for YOU (Tri) - Press "T R I" quickly to disable protection
+    let bypassSeq = [];
+    document.addEventListener('keypress', (e) => {
+        bypassSeq.push(e.key.toLowerCase());
+        if (bypassSeq.length > 3) bypassSeq.shift();
+        if (bypassSeq.join('') === 'tri') {
+            alert("🔓 Protection Disabled for this session");
+            // You can now use Ctrl+U
+            document.onkeydown = null;
+            document.oncontextmenu = null;
+        }
+    });
+
     window.onload = async () => {
         checkBlocked();
         await loadPasswords();
